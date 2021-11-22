@@ -1358,7 +1358,8 @@ pcall(function()
 		if v:IsA("RemoteEvent") then
 			RemoteTable[tostring(v)] = v
 			if RemotesToReplace[tostring(v)] then
-				RemotesToReplace[tostring(v)] = v
+				    local RemotesToReplace = {["SpawnCrate"] = true}
+
 			end
 		elseif RemotesToReplace[tostring(v)] then
 			RemotesThatAreReplaced[tostring(v)] = true
