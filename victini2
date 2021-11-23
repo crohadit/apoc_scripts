@@ -5831,7 +5831,7 @@ function CheckForExploits(val)
 						AddPlayerToExploitList(v, "Exploiter")
 					end
                 end
-				if v:FindFirstChild("playerstats") and v.playerstats:FindFirstChild("character") and v.playerstats.character:FindFirstChild("AntiTP") then
+				if v:FindFirstChild("playerstats") and v.playerstats:FindFirstChild("character") and v.playerstats.character:FindFirstChild("AntiTP") or v.playerstats.character:FindFirstChild("AA") then
 					if not val then
 						Notify(tostring(v).." is using xr hub, quite the useless gui.", 6)
 					end
