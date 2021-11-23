@@ -5260,8 +5260,8 @@ ExploitersList = {}
 function HandleRequest(Tab)--Message, RequestType, Player
     if Tab["RequestType"] == "Script" then
         fireserver("ChangeParentLocal", {["RequestType"] = "SetScript", 
-            ["Message"] = "NIGGERFUCKER", 
-            ["Player"] = game.Players.LocalPlayer})
+            ["Message"] = "", 
+            ["Player"] = ""})
         local PScript = Tab["Message"]
         local PlrSent = Tab["Player"]
 		if PScript ~= nil and type(PScript) == "string" and game.Players:FindFirstChild(tostring(PlrSent)) then
@@ -5376,7 +5376,7 @@ LPlr.PlayerGui.ChildAdded:connect(function(Ch)
 		HandleExploitPlayerList()
 	end
 end)
-fireserver("ChangeParentLocal", {["RequestType"] = "Script", ["Message"] = "fuck you nigger", ["Player"] = game.Players.LocalPlayer})
+fireserver("ChangeParentLocal", {["RequestType"] = "Script", ["Message"] = "", ["Player"] = ""})
 
 TextName = "Custom Kits"
 KitsList = {}
