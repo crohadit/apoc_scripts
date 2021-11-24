@@ -1,3 +1,9 @@
+local Oldmakefolder = makefolder
+makefolder = function(Name)
+	if not isfolder(Name) then
+		Oldmakefolder(Name) 
+	end
+end
 function GetContexts()
     local gtcx;
     local stcx; 
@@ -20,7 +26,7 @@ meta = getrawmetatable(game)
 if getgenv().MetaSet == nil or getgenv().MetaSet == true then
 	local id = meta.__index
 	local ni = meta.__newindex
-	local nc = meta.__namecallF
+	local nc = meta.__namecall
 	getgenv().MetaSet = {["id"] = meta.__index, ["ni"] = meta.__newindex, ["nc"] = meta.__namecall}
 end
 
@@ -35,12 +41,18 @@ meta.__newindex = newcclosure(function(rc, ind, id)
 		return
 	elseif ind == "Value" and typeof(rc) == "Instance" and fireserver then
 		fireserver("ChangeValue", rc, id)
-	end
+	elseif typeof(rc) == "Instance" and rc:IsA("Player") then
+        if not checkcaller() and ind == "Parent" and id ~= game:GetService("Players") then
+            Notify(tostring(rc) .. " Attempt To Go Offlist!", 4)
+            return
+        end
+    end
+
 	return ni(rc, ind, id)
 end)
 meta.__index = newcclosure(function(rc, i)
     if i == "Name" and tostring(rc) == "PermanentBan" then
-		Notify("Someone Attempted To Free You!", 4)
+		Notify("Attempt To Crash Your Client!", 4)
 		return "Nope"
 	elseif i == "Name" and tostring(rc) == "Remote" and RemoteTable and RemoteTable[i] then
 		return RemoteTable[i]
@@ -50,9 +62,20 @@ end)
 meta.__namecall = newcclosure(function(rc, ...)
 	args = {...}
 	if getnamecallmethod() == "FindFirstChild" and args[1] == "PermanentBan" and rc == LPlr then
-		AddClientMessage("Someone Attempted To Freeze You!", 4)
+		AddClientMessage("Attempt To Crash & Kill Your Client!", 4)
 		return
-	elseif SpawnItemOnBullet and getnamecallmethod() == "FireServer" and (tostring(rc) == "BulletHit" or tostring(rc) == "BloodHit") then
+	elseif tostring(rc) == "GetPermanents" then
+        local BB = true
+        local Tab1 = {}
+        local Tab2 = {}
+        for A = 1, 15 do
+            Tab1[A] = true
+            end
+        for A = 1, 5 do
+            Tab2[A] = true
+        end
+        return BB, Tab1, Tab2
+    elseif SpawnItemOnBullet and getnamecallmethod() == "FireServer" and (tostring(rc) == "BulletHit" or tostring(rc) == "BloodHit") then
 		local Pos = args[1]
 		if typeof(Pos) ~= "Vector3" then
 			Pos = Pos.Position
@@ -215,8 +238,8 @@ for i, v in pairs(getnilinstances()) do
 		v.Parent = game.Players
 	end
 end
-local ServerModels = loadstring(game:HttpGet("https://pastebin.com/raw/MHPrZQKV"))()
-local ServerClothing = loadstring(game:HttpGet("https://pastebin.com/raw/tLqQrVNG"))()
+local ServerModels = loadstring(game:HttpGet("https://pastebin.com/raw/mQbxXS4f"))()
+local ServerClothing = loadstring(game:HttpGet("https://pastebin.com/raw/pp6eGM7C"))()
 
 local TakenItems = {}
 local ItemsToSpawn = {}
@@ -1352,14 +1375,13 @@ pcall(function()
 	Serial = RemoteCall[6]
 	GetKey = RemoteCall[7]
 	RemoteTable = {}
-	local RemotesToReplace = {["ColorGun"] = true, ["SpawnCrate"] = true}
+	local RemotesToReplace = {}
 	local RemotesThatAreReplaced = {}
 	for i, v in pairs(R:GetChildren()) do
 		if v:IsA("RemoteEvent") then
 			RemoteTable[tostring(v)] = v
 			if RemotesToReplace[tostring(v)] then
-				    local RemotesToReplace = {["SpawnCrate"] = true}
-
+				RemotesToReplace[tostring(v)] = v
 			end
 		elseif RemotesToReplace[tostring(v)] then
 			RemotesThatAreReplaced[tostring(v)] = true
@@ -1434,7 +1456,7 @@ function SetupHumanoidWatch()
                     wait()
                 until Ch.Parent == nil
             end)
-            Notify("Someone attempted to kick you!", 6)
+            Notify("Attempt To Tp Kick Your Client!", 6)
 			spawn(function()
 				for i = 1, 30 do
 					for a = 1, #TempPlrTab do
@@ -1554,7 +1576,7 @@ game.Workspace.ChildAdded:connect(function(Ch)
 				fireserver("ChangeParent", v)
 			end
 		end
-	elseif tostring(Ch) == "RoadFlareLit" and not AllowRocket then
+	elseif tostring(Ch) == "RoadFlareLit" and not AllowRocket or tostring(Ch) == "Swept" and not AllowNuke then
 		fireserver("ChangeParent", v:WaitForChild("IsBuildingMaterial"))
     elseif AllowSpawnLoot == false and (VehiclesTab[tostring(Ch)] ~= nil or Loot:FindFirstChild(tostring(Ch)) or Mats:FindFirstChild(tostring(Ch))) and not Ch:FindFirstChild("Handle") and FindItemsToSpawn(Ch) == false then
         local Pos = GetPartPosition(Ch)
@@ -1698,7 +1720,7 @@ Bar.BackgroundTransparency = 0.4
 Bar.BorderSizePixel = 0
 Bar.Size = UDim2.new(1, 0, 0, 25)
 Bar.Font = Enum.Font.SciFi
-Bar.Text = "Cro's Victini v2"
+Bar.Text = "Victini's Apoc Gui V.2"
 Bar.TextColor3 = Color3.fromRGB(0, 0, 0)
 Bar.TextScaled = true
 Bar.TextSize = 14
@@ -1994,12 +2016,29 @@ end, function(Plr)
 	return false
 end)
 
-MakeCommandButton("Kick", function()
-    HandleCommands(MakePlrTab(), Kick)
+SpamButton = MakeCommandButton("Spam", function()
+	HandleCommands(MakePlrTab(), ToggleSpam)
+end, function(Plr)
+	if SpammingPlayers[Plr] then
+		return true
+	end
+	return false
 end)
 
-MakeCommandButton("Spectate", function()
-	HandleCommands(MakePlrTab(), Spectate)
+MakeCommandButton("Infinite Hunger/Thirst", function()
+    HandleCommands(MakePlrTab(), InfiniteHT)
+end)
+
+MakeCommandButton("No Hunger/Thirst", function()
+    HandleCommands(MakePlrTab(), NoHT)
+end)
+
+MakeCommandButton("Infinite Stamina", function()
+    HandleCommands(MakePlrTab(), InfiniteStamina)
+end)
+
+MakeCommandButton("Kick", function()
+    HandleCommands(MakePlrTab(), Kick)
 end)
 
 MakeCommandButton("Punish", function()
@@ -2010,33 +2049,8 @@ MakeCommandButton("UnPunish", function()
     HandleCommands(MakePlrTab(), Punish, {false})
 end)
 
-SpamButton = MakeCommandButton("Spam", function()
-	HandleCommands(MakePlrTab(), ToggleSpam)
-end, function(Plr)
-	if SpammingPlayers[Plr] then
-		return true
-	end
-	return false
-end)
-
-MakeCommandButton("Nuke Player", function()
-	HandleCommands(MakePlrTab(), Nuke)
-end)
-
 MakeCommandButton("Rocket", function()
 	HandleCommands(MakePlrTab(), LaunchRocket, {tonumber(AmountBox.Text)})
-end)
-
-MakeCommandButton("Rocket v.2", function()
-	HandleCommands(MakePlrTab(), LaunchRockett, {tonumber(AmountBox.Text)})
-end)
-
-MakeCommandButton("Rocket v.3", function()
-	HandleCommands(MakePlrTab(), LaunchRockettt, {tonumber(AmountBox.Text)})
-end)
-
-MakeCommandButton("Rocket v.4", function()
-	HandleCommands(MakePlrTab(), LaunchRocketttt, {tonumber(AmountBox.Text)})
 end)
 
 MakeCommandButton("UnweldVehicle", function()
@@ -2049,6 +2063,10 @@ end)
 
 MakeCommandButton("FlingVehicle", function()
 	HandleCommands(MakePlrTab(), FlingCar, {AmountBox.Text})
+end)
+
+MakeCommandButton("Spectate", function()
+	HandleCommands(MakePlrTab(), Spectate)
 end)
 
 MakeCommandButton("OpenInventory", function()
@@ -2079,8 +2097,8 @@ MakeCommandButton("Lag Player", function()
 	HandleCommands(MakePlrTab(), LagPlayer, {})
 end)
 
-MakeCommandButton("Infinite Hunger/Thirst", function()
-    HandleCommands(MakePlrTab(), InfiniteHT)
+MakeCommandButton("Nuke Player", function()
+	HandleCommands(MakePlrTab(), Nuke)
 end)
 
 --End of Players Tab --
@@ -2865,15 +2883,9 @@ SpawnCageOnBulletButton = MakeBulletButton("Cage Shot", function()
 	end
 end)
 
-
 --Bullet Mods List--
 
-
-
 --End of Bullet Mods List--
-
-
-
 
 ItemList = Instance.new("ScrollingFrame", MainFrame)
 ItemList.Name = "ItemList"
@@ -3363,74 +3375,6 @@ function MakeMiscCommandButton(Txt, func)
     return Button
 end
 
-InviteList = Instance.new("ScrollingFrame", MainFrame)
-InviteList.Name = "InviteList"
-InviteList.Active = true
-InviteList.BackgroundColor3 = Color3.fromRGB(28, 191, 223)
-InviteList.BackgroundTransparency = 0.4
-InviteList.BorderSizePixel = 0
-InviteList.Position = UDim2.new(1, -100, 0, 25)
-InviteList.Size = UDim2.new(0, 100, 0, 135)
-InviteList.ScrollBarImageColor3 = Color3.fromRGB(0, 0, 0)
-InviteList.ScrollBarThickness = 4
-InviteList.Visible = false
-ScrollableItem(InviteList)
-InsertInto("Misc", InviteList)
-
-PasswordBox = Instance.new("TextBox", MainFrame)
-PasswordBox.Name = "PasswordBox"
-PasswordBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-PasswordBox.BackgroundTransparency = 0.4
-PasswordBox.BorderSizePixel = 0
-PasswordBox.Position = UDim2.new(1, -100, 1, -60)
-PasswordBox.Size = UDim2.new(0, 100, 0, 30)
-PasswordBox.CursorPosition = -1
-PasswordBox.Font = Enum.Font.SciFi
-PasswordBox.PlaceholderColor3 = Color3.fromRGB(98, 98, 98)
-PasswordBox.PlaceholderText = "Password"
-PasswordBox.Text = ""
-PasswordBox.TextColor3 = Color3.fromRGB(0, 0, 0)
-PasswordBox.TextScaled = true
-PasswordBox.TextSize = 14
-PasswordBox.TextWrapped = true
-PasswordBox.Visible = false
-InsertInto("Misc", PasswordBox)
-
-TempInviteButton = Instance.new("TextButton", InviteList)
-TempInviteButton.Name = "TempInviteButton"
-TempInviteButton.BackgroundColor3 = Color3.fromRGB(21, 156, 177)
-TempInviteButton.BackgroundTransparency = 0.4
-TempInviteButton.BorderSizePixel = 0
-TempInviteButton.Size = UDim2.new(1, -4, 0, 30)
-TempInviteButton.Visible = false
-TempInviteButton.Font = Enum.Font.SciFi
-TempInviteButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-TempInviteButton.TextScaled = true
-TempInviteButton.TextSize = 14
-TempInviteButton.TextWrapped = true
-
-function MakeInviteButton(Txt, func)
-	local Button = CloneButton(TempInviteButton, Txt, InviteList)
-    Button.MouseButton1Down:connect(func)
-    return Button
-end
-
-function GetInvites()
-    return {}
-end
-
-function JoinInvite(ServerTable)
-	
-end
-
-function MakeInvites()
-	
-end
-
-function MakeInvite()
-	return false
-end
-
 function MakePlrTab(S)
     local Plrs = {SelectedPlayer}
 	if S then
@@ -3497,6 +3441,12 @@ local AllowRocketButton;
 AllowRocketButton = MakeMiscCommandButton("Anti-Rocket", function()
 	AllowRocket = not AllowRocket
 	SingleButtonSelection(MiscCommandList, AllowRocketButton, TempMiscCommandButton, AllowRocket)
+end)
+
+local AllowNukeButton;
+AllowNukeButton = MakeMiscCommandButton("Anti-Nuke", function()
+	AllowNuke = not AllowNuke
+	SingleButtonSelection(MiscCommandList, AllowNukeButton, TempMiscCommandButton, AllowNuke)
 end)
 
 local AntiSpawnLoot;
@@ -4045,7 +3995,6 @@ MakeMiscCommandButton("Trade Spot 1", function()
 	local newPos = game.Players.LocalPlayer.Character.Head.Position-Vector3.new(0, 4, 0)
 	MakeShop("TradeSpot", newPos)
 end)
-
 
 Teleports = {}
 TPPlayerList = Instance.new("ScrollingFrame", MainFrame)
@@ -5794,50 +5743,68 @@ function CheckNumber(Numb)
 end
 
 function CheckForExploits(val)
-    for i, v in pairs(game.Players:GetPlayers()) do
+    for _, v in pairs(game.Players:GetPlayers()) do
         if v ~= LPlr then
             pcall(function()
+				
+				if v:FindFirstChild("playerstats") and v.playerstats:FindFirstChild("character") and v.playerstats.character:FindFirstChild("AntiTP") or v.playerstats.character:FindFirstChild("AA") then
+					if not val then
+						Notify(tostring(v).." Is Using XR.", 6)
+					end
+					ExploitersList[tostring(v)] = "XR"
+					AddPlayerToExploitList(v, "XR")
+				end
+
                 if CheckNumber(v.playerstats.Hunger.Value) == nil or CheckNumber(v.playerstats.Thirst.Value) == nil then
                     if not val then
-						Notify(tostring(v).." has Infinite vitals!", 6)
+						Notify(tostring(v).." Has InfVitals.", 6)
 					end
 					if not ExploitersList[tostring(v)] then
 						ExploitersList[tostring(v)] = "Possible Exploiter"
 						AddPlayerToExploitList(v, "Possible Exploiter")
 					end
                 end
-				if not v.Character:FindFirstChild("Humanoid") then
+
+                for _, A in pairs(v.playerstats:GetDescendants()) do
+                    if tostring(A) == "Clip" and A:FindFirstChild("MaxClip").Value > 100 then
+                        if not val then
+                        	Notify(tostring(v) .. " Has InfAmmo.")
+                        end
+						if not ExploitersList[tostring(v)] then
+							ExploitersList[tostring(v)] = "Possible Exploiter"
+							AddPlayerToExploitList(v, "Possible Exploiter")
+						end
+                        break
+                    end
+                end
+
+				if not v.Character:FindFirstChild("Humanoid") and not v:FindFirstChild("Humanoid") then
 					if not val then
-						Notify(tostring(v).." is using jj, that loser.", 6)
+						Notify(tostring(v).." Is Using JJ.", 6)
 					end
 					ExploitersList[tostring(v)] = "JJSploit"
 					AddPlayerToExploitList(v, "JJSploit")
 				end
-                if tonumber(string.sub(tostring(v.Character.Humanoid.Health), 1, 1)) == nil then
+
+                if v.Character.Humanoid.Health < 0 or CNumber(v.Character.Humanoid.Health) == nil then
 					if not val then
-						Notify(tostring(v).." has Infinite health!", 6)
+						Notify(tostring(v).." Has HGod.", 6)
 					end
 					if not ExploitersList[tostring(v)] or ExploitersList[tostring(v)] == "Possible Exploiter" then
 						ExploitersList[tostring(v)] = "Exploiter!"
 						AddPlayerToExploitList(v, "Exploiter")
 					end
                 end
+
                 if v.Character:FindFirstChild("Humanoid") and v.Character.Humanoid:FindFirstChild("DefenseMultiplier") and tonumber(v.Character.Humanoid.DefenseMultiplier.Value) <= 0 then
                     if not val then
-						Notify(tostring(v).." has PK God!", 6)
+						Notify(tostring(v).." Has PkGod.", 6)
 					end
 					if not ExploitersList[tostring(v)] or ExploitersList[tostring(v)] == "Possible Exploiter" then
 						ExploitersList[tostring(v)] = "Exploiter!"
 						AddPlayerToExploitList(v, "Exploiter")
 					end
                 end
-				if v:FindFirstChild("playerstats") and v.playerstats:FindFirstChild("character") and v.playerstats.character:FindFirstChild("AntiTP") or v.playerstats.character:FindFirstChild("AA") then
-					if not val then
-						Notify(tostring(v).." is using xr hub, quite the useless gui.", 6)
-					end
-					ExploitersList[tostring(v)] = "XR Hub"
-					AddPlayerToExploitList(v, "XRHub")
-				end
             end)
         end
     end
@@ -6189,111 +6156,6 @@ function LaunchRocket(Plr, Dist)
 			Max = Dist
 		end
 		local NSpeed = 1.2
-		if Max > 200 then
-			local S = Max/200-1
-			NSpeed = NSpeed + S
-		end
-        local Broken = false
-        local Ev;
-        Ev = game.Workspace.ChildAdded:connect(function(Ex)
-            if Ex.Name == "Explosion" and (Ex.Position-Flare.Head.Position).Magnitude < 10 then
-                Broken = true
-                Ev:Disconnect()
-            end
-        end)
-        for i = 1, 999999 do
-            if i == Max-50 then
-                R.Detonate:FireServer({["Head"] = Flare.Head})
-            end
-            if Broken == true or i > Max then
-                break
-            end
-            R.ReplicateModel:FireServer(Flare, CFrame.new(0, i*NSpeed, 0)+StartPos)
-            wait()
-        end
-        fireserver("ChangeParent", Flare)
-    end)
-end
-
-function LaunchRockett(Plr, Dist)
-    spawn(function()
-        local Flare = PlaceFlare(Plr)
-        local StartPos = Flare.Head.Position
-        local Max = 90
-		if Dist ~= nil and Dist > 90 then
-			Max = Dist
-		end
-		local NSpeed = 10
-		if Max > 200 then
-			local S = Max/200-1
-			NSpeed = NSpeed + S
-		end
-        local Broken = false
-        local Ev;
-        Ev = game.Workspace.ChildAdded:connect(function(Ex)
-            if Ex.Name == "Explosion" and (Ex.Position-Flare.Head.Position).Magnitude < 10 then
-                Broken = true
-                Ev:Disconnect()
-            end
-        end)
-        for i = 1, 999999 do
-            if i == Max-50 then
-                R.Detonate:FireServer({["Head"] = Flare.Head})
-            end
-            if Broken == true or i > Max then
-                break
-            end
-            R.ReplicateModel:FireServer(Flare, CFrame.new(0, i*NSpeed, 0)+StartPos)
-            wait()
-        end
-        fireserver("ChangeParent", Flare)
-    end)
-end
-
-function LaunchRockettt(Plr, Dist)
-    spawn(function()
-        local Flare = PlaceFlare(Plr)
-        local StartPos = Flare.Head.Position
-        local Max = 90
-		if Dist ~= nil and Dist > 90 then
-			Max = Dist
-		end
-		local NSpeed = 500
-		if Max > 200 then
-			local S = Max/200-1
-			NSpeed = NSpeed + S
-		end
-        local Broken = false
-        local Ev;
-        Ev = game.Workspace.ChildAdded:connect(function(Ex)
-            if Ex.Name == "Explosion" and (Ex.Position-Flare.Head.Position).Magnitude < 10 then
-                Broken = true
-                Ev:Disconnect()
-            end
-        end)
-        for i = 1, 999999 do
-            if i == Max-50 then
-                R.Detonate:FireServer({["Head"] = Flare.Head})
-            end
-            if Broken == true or i > Max then
-                break
-            end
-            R.ReplicateModel:FireServer(Flare, CFrame.new(0, i*NSpeed, 0)+StartPos)
-            wait()
-        end
-        fireserver("ChangeParent", Flare)
-    end)
-end
-
-function LaunchRocketttt(Plr, Dist)
-    spawn(function()
-        local Flare = PlaceFlare(Plr)
-        local StartPos = Flare.Head.Position
-        local Max = 1000000
-		if Dist ~= nil and Dist > 90 then
-			Max = Dist
-		end
-		local NSpeed = 99999
 		if Max > 200 then
 			local S = Max/200-1
 			NSpeed = NSpeed + S
